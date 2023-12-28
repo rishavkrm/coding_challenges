@@ -7,62 +7,32 @@ import java.util.HashMap;
 import java.util.concurrent.*;
 
 public class Tester {
-    static boolean printResultFLag = false;
-
     public static void main(String[] args) {
         String url = "http://localhost:8080";
-        int n_sequential = 10;
-        int n_concurrent = 10;
+        int n = 100;
+        int c = 40;
 
         CopyOnWriteArrayList<Long> totalTime = new CopyOnWriteArrayList<>();
         CopyOnWriteArrayList<Long> firstByteTime = new CopyOnWriteArrayList<>();
         CopyOnWriteArrayList<Long> lastByteTime = new CopyOnWriteArrayList<>();
         Map<Integer, Integer> statusMap = new HashMap<>();
-        requestsInSequence(n_sequential, statusMap, url, firstByteTime, lastByteTime, totalTime);
-        concurrentRequests(n_concurrent, statusMap, url, firstByteTime, lastByteTime, totalTime);
+        concurrentRequests(n, c, statusMap, url, firstByteTime, lastByteTime, totalTime);
     }
 
-    public static void requestsInSequence(int n, Map<Integer, Integer> statusMap, String url,
+    public static void concurrentRequests(int n, int c, Map<Integer, Integer> statusMap, String url,
             CopyOnWriteArrayList<Long> firstByteTime, CopyOnWriteArrayList<Long> lastByteTime,
             CopyOnWriteArrayList<Long> totalTime) {
-        ExecutorService thread = Executors.newSingleThreadExecutor();
-
-        MakeRequestRunnable makeRequest = new MakeRequestRunnable(url, firstByteTime, lastByteTime, totalTime,
-                statusMap);
-        for (int i = 0; i < n; i++) {
-            thread.execute(makeRequest);
-        }
-        thread.shutdown();
-        try {
-            thread.awaitTermination(Long.MAX_VALUE, TimeUnit.SECONDS);
-            if (printResultFLag) {
-                printResult(statusMap, url, firstByteTime, lastByteTime, totalTime);
-            } else {
-                printResultFLag = true;
-            }
-
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        }
-    }
-
-    public static void concurrentRequests(int n, Map<Integer, Integer> statusMap, String url,
-            CopyOnWriteArrayList<Long> firstByteTime, CopyOnWriteArrayList<Long> lastByteTime,
-            CopyOnWriteArrayList<Long> totalTime) {
-        ExecutorService threadPool = Executors.newFixedThreadPool(n);
+        ExecutorService threadPool = Executors.newFixedThreadPool(c);
+        System.out.println(c);
         for (int i = 0; i < n; i++) {
             threadPool.execute(new MakeRequestRunnable(url, firstByteTime, lastByteTime, totalTime, statusMap));
         }
         threadPool.shutdown();
-        threadPool.shutdownNow();
         try {
 
             threadPool.awaitTermination(Long.MAX_VALUE, TimeUnit.SECONDS);
-            if (printResultFLag) {
-                printResult(statusMap, url, firstByteTime, lastByteTime, totalTime);
-            } else {
-                printResultFLag = true;
-            }
+            printResult(statusMap, url, firstByteTime, lastByteTime, totalTime);
+
         } catch (InterruptedException e) {
             e.printStackTrace();
         }
